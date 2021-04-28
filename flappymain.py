@@ -28,12 +28,15 @@ def remove_pipes(pipes):
 			pipes.remove(pipe)
 	return pipes
 def check_collision(pipes):
+	global can_score
 	for pipe in pipes:
 		if bird_rect.colliderect(pipe):
 			death_sound.play()
+			can_score = True
 			return False
 
 	if bird_rect.top <= -50 or bird_rect.bottom >= 450:
+		can_score = True
 		return False
 
 	return True
@@ -66,6 +69,20 @@ def update_score(score, high_score):
 		high_score = score
 	return high_score
 
+
+def pipe_score_check():
+	global score, can_score 
+	
+	if pipe_list:
+		for pipe in pipe_list:
+			if 47.5 < pipe.centerx < 52.5 and can_score:
+				score += 1
+				score_sound.play()
+				can_score = False
+			if pipe.centerx < 0:
+				can_score = True
+
+
 pygame.mixer.pre_init(frequency = 44100, size = 16, channels = 1, buffer = 512)
 pygame.init()
 screen = pygame.display.set_mode((288,512))
@@ -78,6 +95,7 @@ bird_movement = 0
 game_active = True
 score = 0
 high_score = 0
+can_score = True
 
 bg_surface = pygame.image.load('assets/background-day.png').convert()
 
@@ -95,9 +113,6 @@ bird_rect = bird_surface.get_rect(center = (50,256))
 BIRDFLAP = pygame.USEREVENT + 1
 pygame.time.set_timer(BIRDFLAP,200)
 
-# bird_surface = pygame.image.load('assets/bluebird-midflap.png').convert_alpha()
-# bird_rect = bird_surface.get_rect(center = (50,256))
-
 pipe_surface = pygame.image.load('assets/pipe-green.png')
 pipe_list = []
 SPAWNPIPE = pygame.USEREVENT
@@ -111,6 +126,8 @@ flap_sound = pygame.mixer.Sound('audio/wing.wav')
 death_sound = pygame.mixer.Sound('audio/hit.wav')
 score_sound = pygame.mixer.Sound('audio/point.wav')
 score_sound_countdown = 100
+
+# Event Loop
 
 while True:
 	for event in pygame.event.get():
@@ -155,12 +172,9 @@ while True:
 		pipe_list = remove_pipes(pipe_list)
 		draw_pipes(pipe_list)
 		
-		score += 0.01
+		# Score
+		pipe_score_check()
 		score_display('main_game')
-		score_sound_countdown -= 1
-		if score_sound_countdown <= 0:
-			score_sound.play()
-			score_sound_countdown = 100
 	else:
 		screen.blit(game_over_surface,game_over_rect)
 		high_score = update_score(score,high_score)
